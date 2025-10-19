@@ -1,55 +1,97 @@
+{{-- resources/views/envios/edit.blade.php --}}
 <x-app-layout>
-    <x-slot name="header"><h2 class="font-semibold text-xl text-gray-800 leading-tight">Editar envío #{{ $envio->id }}</h2></x-slot>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            Editar envío #{{ $envio->id }}
+        </h2>
+    </x-slot>
 
     <div class="py-6">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
             @if($errors->any())
                 <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
                     <ul class="list-disc pl-5">
-                        @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+                        @foreach($errors->all() as $e)
+                            <li>{{ $e }}</li>
+                        @endforeach
                     </ul>
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('envios.update',$envio) }}" class="bg-white p-6 rounded shadow space-y-4" id="formEnvio">
-                @csrf @method('PUT')
+            <form method="POST" action="{{ route('envios.update',$envio) }}" class="bg-white p-6 rounded shadow space-y-4" id="f-envio-edit">
+                @csrf
+                @method('PUT')
 
+                {{-- Cliente --}}
+                <div>
+                    <label class="block text-sm mb-1">Cliente</label>
+                    <select name="cliente_id" class="w-full border rounded px-3 py-2" required>
+                        <option value="">Seleccione…</option>
+                        @foreach($clientes as $c)
+                            <option value="{{ $c->id }}" {{ $envio->cliente_id == $c->id ? 'selected' : '' }}>
+                                {{ $c->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Bultos / Valor por bulto / Total (readonly) --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <x-input-label value="valor envio" />
-                    <x-text-input name="valor_envio" type="text" class="md:col-span-2 cop"
-                        value="{{ number_format($envio->valor_envio,0,',','.') }}" required />
+                    <div>
+                        <label class="block text-sm mb-1">Bultos a vender</label>
+                        <input
+                            type="number" min="1" name="numero_bulto" id="e_bultos"
+                            class="w-full border rounded px-3 py-2" value="{{ $envio->numero_bulto }}" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1">Valor por bulto</label>
+                        <input
+                            type="text" name="valor_bulto" id="e_valor_bulto"
+                            class="w-full border rounded px-3 py-2"
+                            value="{{ '$'.number_format($envio->valor_bulto,0,',','.') }}" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1">Total</label>
+                        <input type="text" id="e_total" class="w-full border rounded px-3 py-2 bg-slate-50" readonly>
+                    </div>
+                </div>
 
-                    <x-input-label value="numero bulto" />
-                    <x-text-input name="numero_bulto" type="number" min="1" class="md:col-span-2"
-                        value="{{ $envio->numero_bulto }}" required />
+                {{-- Tipo de grano --}}
+                <div>
+                    <label class="block text-sm mb-1">Tipo de grano</label>
+                    <select name="tipo_grano" class="w-full border rounded px-3 py-2" required>
+                        <option value="premium" {{ $envio->tipo_grano === 'premium' ? 'selected' : '' }}>Premium</option>
+                        <option value="eco"     {{ $envio->tipo_grano === 'eco' ? 'selected' : '' }}>Eco</option>
+                    </select>
+                </div>
 
-                    <x-input-label value="valor bulto" />
-                    <x-text-input name="valor_bulto" type="text" class="md:col-span-2 cop"
-                        value="{{ number_format($envio->valor_bulto,0,',','.') }}" required />
-
-                    <x-input-label value="ganacia total" />
-                    <x-text-input name="ganancia_total" type="text" class="md:col-span-2 cop"
-                        value="{{ number_format($envio->ganancia_total,0,',','.') }}" required />
-
-                    <x-input-label value="pago contado" />
-                    <x-text-input name="pago_contado" type="text" class="md:col-span-2 cop"
-                        value="{{ number_format($envio->pago_contado,0,',','.') }}" />
-
-                    <x-input-label value="pago a plazo" />
-                    <x-text-input name="pago_a_plazo" type="text" class="md:col-span-2 cop"
-                        value="{{ number_format($envio->pago_a_plazo,0,',','.') }}" />
-
-                    <x-input-label value="fecha contado" />
-                    <x-text-input name="fecha_contado" type="date" class="md:col-span-2"
-                        value="{{ optional($envio->fecha_contado)->format('Y-m-d') }}" />
-
-                    <x-input-label value="fecha plazo" />
-                    <x-text-input name="fecha_plazo" type="date" class="md:col-span-2"
-                        value="{{ optional($envio->fecha_plazo)->format('Y-m-d') }}" />
-
-                    <x-input-label value="fecha envio" />
-                    <x-text-input name="fecha_envio" type="date" class="md:col-span-2"
-                        value="{{ optional($envio->fecha_envio)->format('Y-m-d') }}" />
+                {{-- Abono / Saldo (readonly) / Fecha envío / Fecha plazo --}}
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm mb-1">Abono</label>
+                        <input
+                            type="text" name="pago_contado" id="e_abono"
+                            class="w-full border rounded px-3 py-2"
+                            value="{{ '$'.number_format($envio->pago_contado,0,',','.') }}" placeholder="$0">
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1">Queda debiendo</label>
+                        <input type="text" id="e_saldo" class="w-full border rounded px-3 py-2 bg-slate-50" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1">Fecha de envío</label>
+                        <input
+                            type="date" name="fecha_envio"
+                            value="{{ optional($envio->fecha_envio ?? $envio->created_at)->format('Y-m-d') }}"
+                            class="w-full border rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1">Fecha de plazo</label>
+                        <input
+                            type="date" name="fecha_plazo"
+                            value="{{ optional($envio->fecha_plazo)->format('Y-m-d') }}"
+                            class="w-full border rounded px-3 py-2">
+                    </div>
                 </div>
 
                 <div class="flex gap-2 justify-end">
@@ -60,21 +102,45 @@
         </div>
     </div>
 
-    {{-- mismo script de formato COP que en create --}}
+    {{-- Cálculos en vivo: total y saldo --}}
     <script>
     (function(){
-        const fmt = new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', maximumFractionDigits: 0 });
-        function unformatCop(str){ return (str||'').replace(/[^\d]/g,''); }
-        function formatCopInput(el){
-            const raw = unformatCop(el.value);
-            el.value = raw ? fmt.format(parseInt(raw,10)) : '';
+        const digits = s => (s||'').replace(/[^\d]/g,'');
+        const fmt    = n => Number(n||0).toLocaleString('es-CO');
+
+        const bultos = document.getElementById('e_bultos');
+        const valor  = document.getElementById('e_valor_bulto');
+        const total  = document.getElementById('e_total');
+        const abono  = document.getElementById('e_abono');
+        const saldo  = document.getElementById('e_saldo');
+
+        function recalc(){
+            const nb = Number(bultos?.value || 0);
+            const vb = Number(digits(valor?.value));
+            const ab = Number(digits(abono?.value));
+            const tt = nb * vb;
+            const sd = Math.max(0, tt - ab);
+            if (total) total.value = '$' + fmt(tt);
+            if (saldo) saldo.value = '$' + fmt(sd);
         }
-        document.querySelectorAll('input.cop').forEach(el=>{
-            el.addEventListener('input', ()=>formatCopInput(el));
-            el.addEventListener('blur', ()=>formatCopInput(el));
-        });
-        document.getElementById('formEnvio').addEventListener('submit', ()=>{
-            document.querySelectorAll('input.cop').forEach(el=> el.value = unformatCop(el.value));
+
+        function moneyInput(e){
+            const v = digits(e.target.value);
+            e.target.value = v ? '$' + Number(v).toLocaleString('es-CO') : '';
+            recalc();
+        }
+
+        valor?.addEventListener('input', moneyInput);
+        abono?.addEventListener('input', moneyInput);
+        bultos?.addEventListener('input', recalc);
+
+        // Recalcular al cargar para mostrar valores actuales
+        window.addEventListener('DOMContentLoaded', recalc);
+
+        // Normaliza a dígitos antes de enviar
+        document.getElementById('f-envio-edit').addEventListener('submit', ()=>{
+            if (valor) valor.value = digits(valor.value);
+            if (abono) abono.value = digits(abono.value);
         });
     })();
     </script>

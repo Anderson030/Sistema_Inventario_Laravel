@@ -26,7 +26,6 @@
                         {{ __('Conductores') }}
                     </x-nav-link>
 
-
                     <!-- Clientes -->
                     <x-nav-link :href="route('clientes.index')" :active="request()->routeIs('clientes.*')">
                         {{ __('Clientes') }}
@@ -35,6 +34,15 @@
                     <!-- Proveedores -->
                     <x-nav-link :href="route('proveedores.index')" :active="request()->routeIs('proveedores.*')">
                         {{ __('Proveedores') }}
+                    </x-nav-link>
+
+                    {{-- NUEVOS: Facturación y Facturas --}}
+                    <x-nav-link :href="route('facturacion.index')" :active="request()->routeIs('facturacion.*')">
+                        {{ __('Facturación') }}
+                    </x-nav-link>
+
+                    <x-nav-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
+                        {{ __('Facturas') }}
                     </x-nav-link>
                 </div>
             </div>
@@ -99,7 +107,6 @@
                 {{ __('Conductores') }}
             </x-responsive-nav-link>
 
-
             <!-- Clientes (responsive) -->
             <x-responsive-nav-link :href="route('clientes.index')" :active="request()->routeIs('clientes.*')">
                 {{ __('Clientes') }}
@@ -108,6 +115,15 @@
             <!-- Proveedores (responsive) -->
             <x-responsive-nav-link :href="route('proveedores.index')" :active="request()->routeIs('proveedores.*')">
                 {{ __('Proveedores') }}
+            </x-responsive-nav-link>
+
+            {{-- NUEVOS (responsive) --}}
+            <x-responsive-nav-link :href="route('facturacion.index')" :active="request()->routeIs('facturacion.*')">
+                {{ __('Facturación') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
+                {{ __('Facturas') }}
             </x-responsive-nav-link>
         </div>
 

@@ -1,3 +1,96 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ====== BASE (colores y tipografía en dark) ====== */
+@layer base {
+  :root{
+    --ring: 0 0% 100%;
+  }
+  html, body{
+    @apply bg-gray-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100;
+  }
+}
+
+/* ====== COMPONENTES REUTILIZABLES ====== */
+@layer components {
+  /* Contenedor tipo “card” para secciones */
+  .card{
+    @apply bg-white/70 dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 rounded-2xl shadow-sm;
+  }
+
+  /* Botón base */
+  .btn{
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-xl font-semibold transition
+           border border-transparent shadow-sm
+           focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-950;
+  }
+
+  .btn-primary{
+    @apply btn bg-indigo-600 text-white hover:bg-indigo-500
+           focus:ring-indigo-400;
+  }
+  .btn-dark{
+    @apply btn bg-slate-800 text-slate-100 hover:bg-slate-700
+           focus:ring-slate-500;
+  }
+  .btn-outline{
+    @apply btn bg-transparent text-indigo-400 border border-indigo-500 hover:bg-indigo-600 hover:text-white;
+  }
+  .btn-danger{
+    @apply btn bg-rose-600 text-white hover:bg-rose-500 focus:ring-rose-400;
+  }
+  .btn-success{
+    @apply btn bg-emerald-600 text-white hover:bg-emerald-500 focus:ring-emerald-400;
+  }
+
+  /* Tabla contenedor */
+  .table-shell{
+    @apply overflow-x-auto card;
+  }
+
+  /* Tabla */
+  .tbl{
+    @apply min-w-full border border-slate-200/70 dark:border-slate-800;
+  }
+  .tbl thead th{
+    @apply bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200
+           font-semibold p-2 border border-slate-200/70 dark:border-slate-800;
+  }
+  .tbl tbody td{
+    @apply p-2 border border-slate-200/70 dark:border-slate-800;
+  }
+  .tbl tbody tr{
+    @apply bg-white/60 dark:bg-slate-900;
+  }
+  .tbl tbody tr:nth-child(even){
+    @apply bg-slate-50/70 dark:bg-slate-950;
+  }
+  .tbl tbody tr:hover{
+    @apply bg-indigo-50/60 dark:bg-slate-800/70;
+  }
+
+  /* Badges de estado */
+  .badge{
+    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold;
+  }
+  .badge-green{ @apply badge bg-emerald-600 text-white; }
+  .badge-amber{ @apply badge bg-amber-600 text-white; }
+
+  /* Inputs en dark */
+  .input{
+    @apply w-full rounded-lg px-3 py-2 border border-slate-300 dark:border-slate-800
+           bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100
+           placeholder-slate-400 dark:placeholder-slate-500;
+  }
+
+  /* Caja de totales */
+  .totals-box{
+    @apply text-sm card px-4 py-2;
+  }
+
+  /* Modal base (si usas <dialog>) */
+  dialog{
+    @apply card;
+  }
+}
