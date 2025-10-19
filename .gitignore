@@ -1,25 +1,43 @@
+# Logs y SO
 *.log
 .DS_Store
+Thumbs.db
+
+# Entornos / secretos
 .env
 .env.backup
 .env.production
-.phpactor.json
-.phpunit.result.cache
-/.fleet
+
+# Herramientas/IDE
 /.idea
-/.nova
-/.phpunit.cache
 /.vscode
+/.fleet
+/.nova
 /.zed
+/.phpunit.cache
+/.phpunit.result.cache
+/phpactor.json
 /auth.json
+
+# Dependencias locales
 /node_modules
+/vendor
+
+# Laravel (archivos generados en runtime)
+#   - Mantenemos public/build (ver excepciones al final)
 /public/hot
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
+
+# Homestead / Vagrant
 Homestead.json
 Homestead.yaml
-Thumbs.db
+
+# ====== EXCEPCIONES (sí subir a Git) ======
+# Subir el build de Vite (manifest + assets)
 !public/build/
 !public/build/**
+
+# Si en algún momento decides versionar el storage público enlazado (no usual):
+# !public/storage/
