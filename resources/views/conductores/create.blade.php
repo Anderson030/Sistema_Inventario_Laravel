@@ -24,13 +24,22 @@
 
                 {{-- Datos básicos --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <x-text-input name="nombre" placeholder="Nombre" required
-                        class="w-full dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-600"/>
+                    {{-- Nombre --}}
+                    <div class="space-y-1">
+                        <x-input-label value="Nombre" class="dark:text-slate-200"/>
+                        <x-text-input name="nombre" placeholder="Nombre" required
+                            class="w-full dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-600"/>
+                    </div>
 
-                    <x-text-input name="apellido" placeholder="Apellido" required
-                        class="w-full dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-600"/>
+                    {{-- Apellido --}}
+                    <div class="space-y-1">
+                        <x-input-label value="Apellido" class="dark:text-slate-200"/>
+                        <x-text-input name="apellido" placeholder="Apellido" required
+                            class="w-full dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-600"/>
+                    </div>
 
-                    <div>
+                    {{-- Tipo de documento --}}
+                    <div class="space-y-1">
                         <x-input-label value="Tipo de documento" class="dark:text-slate-200 mb-1"/>
                         <select name="tipo_documento"
                                 class="w-full rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-600"
@@ -43,11 +52,19 @@
                         </select>
                     </div>
 
-                    <x-text-input name="documento" placeholder="Documento" required
-                        class="w-full dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-600"/>
+                    {{-- Documento --}}
+                    <div class="space-y-1">
+                        <x-input-label value="Documento" class="dark:text-slate-200"/>
+                        <x-text-input name="documento" placeholder="Documento" required
+                            class="w-full dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-600"/>
+                    </div>
 
-                    <x-text-input name="celular" placeholder="Celular"
-                        class="w-full dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-600"/>
+                    {{-- Celular --}}
+                    <div class="space-y-1 md:col-span-2">
+                        <x-input-label value="Celular" class="dark:text-slate-200"/>
+                        <x-text-input name="celular" placeholder="Celular"
+                            class="w-full dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-600"/>
+                    </div>
                 </div>
 
                 {{-- Foto --}}

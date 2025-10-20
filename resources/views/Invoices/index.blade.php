@@ -75,19 +75,21 @@
                 </td>
                 <td class="p-2 border border-slate-200 dark:border-slate-800">
                   <div class="flex flex-wrap gap-2">
-                    {{-- Botones negros como en Clientes/Proveedores --}}
-                    <a href="{{ route('invoices.show',$inv) }}"
+                    {{-- Ver --}}
+                    <a href="{{ route('invoices.show',$inv->id) }}"
                        class="px-3 py-1 rounded bg-black text-indigo-400 hover:bg-slate-800">
                       Ver
                     </a>
 
-                    <a href="{{ route('invoices.pdf',$inv) }}"
+                    {{-- PDF --}}
+                    <a href="{{ route('invoices.pdf',$inv->id) }}"
                        class="px-3 py-1 rounded bg-black text-slate-300 hover:bg-slate-800">
                       PDF
                     </a>
 
+                    {{-- Email (si hay correo de cliente) --}}
                     @if($inv->customer_email)
-                      <form action="{{ route('invoices.email',$inv) }}" method="POST" class="inline">
+                      <form action="{{ route('invoices.email',$inv->id) }}" method="POST" class="inline">
                         @csrf
                         <input type="hidden" name="message"
                                value="Hola {{ $inv->customer_name }}, adjuntamos su factura.">
@@ -96,6 +98,18 @@
                         </button>
                       </form>
                     @endif
+
+                    {{-- Eliminar con clave (client-side + server-side) --}}
+                    <form action="{{ route('invoices.destroy',$inv->id) }}"
+                          method="POST"
+                          class="inline delete-invoice-form">
+                      @csrf
+                      @method('DELETE')
+                      <input type="hidden" name="confirm_code" value="">
+                      <button type="submit" class="px-3 py-1 rounded bg-black text-red-400 hover:bg-slate-800">
+                        Eliminar
+                      </button>
+                    </form>
                   </div>
                 </td>
               </tr>
@@ -116,4 +130,23 @@
 
     </div>
   </div>
+
+  {{-- Script inline: pide la clave y la envía en confirm_code --}}
+  <script>
+    document.querySelectorAll('.delete-invoice-form').forEach(function(form) {
+      form.addEventListener('submit', function (e) {
+        const code = prompt('Ingresa la clave para eliminar la factura:');
+        if (code === null) { // cancelado
+          e.preventDefault();
+          return;
+        }
+        if (code !== '123') {
+          e.preventDefault();
+          alert('Clave incorrecta.');
+          return;
+        }
+        form.querySelector('input[name="confirm_code"]').value = code;
+      });
+    });
+  </script>
 </x-app-layout>

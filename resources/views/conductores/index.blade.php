@@ -78,7 +78,8 @@
                                                 <button class="text-slate-500 hover:text-slate-300" @click="open=false">✕</button>
                                             </div>
 
-                                            <form action="{{ route('conductores.asignar', $c) }}" method="POST" class="space-y-3">
+                                            {{-- Pasamos el ID para mayor compatibilidad con el nombre del parámetro --}}
+                                            <form action="{{ route('conductores.asignar', $c->id) }}" method="POST" class="space-y-3">
                                                 @csrf
 
                                                 <div>
@@ -140,12 +141,14 @@
                                     </div>
                                 </div>
 
-                                <a href="{{ route('conductores.edit', $c) }}"
+                                {{-- Editar (ID posicional) --}}
+                                <a href="{{ route('conductores.edit', $c->id) }}"
                                    class="px-3 py-2.5 rounded border border-slate-700 text-slate-200 hover:bg-slate-800">
                                     Editar
                                 </a>
 
-                                <form action="{{ route('conductores.destroy', $c) }}" method="POST"
+                                {{-- Eliminar (ID posicional) --}}
+                                <form action="{{ route('conductores.destroy', $c->id) }}" method="POST"
                                       onsubmit="return confirm('¿Eliminar conductor?')">
                                     @csrf @method('DELETE')
                                     <button class="px-3 py-2.5 rounded bg-red-600 hover:bg-red-700 text-white">

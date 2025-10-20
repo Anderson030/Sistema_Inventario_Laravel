@@ -71,7 +71,7 @@
                 </table>
             </div>
 
-            {{-- Resumen de stock (separado de la tabla) --}}
+            {{-- Resumen de stock --}}
             <div class="bg-white dark:bg-black border dark:border-slate-800 rounded-lg shadow px-5 py-4 mb-8">
                 <h4 class="font-semibold mb-3">Existencias</h4>
                 <div class="grid sm:grid-cols-3 gap-4 text-sm">
@@ -94,7 +94,7 @@
                 {{ $compras->onEachSide(1)->links() }}
             </div>
 
-            {{-- Modal NUEVA COMPRA (fondo negro) --}}
+            {{-- Modal NUEVA COMPRA --}}
             <dialog id="modal-compra" class="rounded-xl p-0 w-full max-w-xl">
                 <div class="relative bg-white dark:bg-black text-slate-900 dark:text-slate-100 border dark:border-slate-800 rounded-xl">
                     <form method="dialog">
@@ -244,44 +244,8 @@
                                     </span>
                                 </td>
                                 <td class="p-2 border dark:border-slate-800">
-                                    <div class="flex flex-wrap items-center justify-between gap-2">
-                                        <div class="flex items-center gap-2">
-                                            <button
-                                                type="button"
-                                                class="px-3 py-1 bg-slate-700 text-white rounded hover:bg-slate-800"
-                                                @click="show=true; envio={{ Js::from([
-                                                    'id'          => $e->id,
-                                                    'cliente'     => optional($e->cliente)->nombre,
-                                                    'tipo'        => $e->tipo_grano,
-                                                    'bultos'      => $e->numero_bulto,
-                                                    'valor_bulto' => '$'.number_format($e->valor_bulto,0,',','.'),
-                                                    'total'       => '$'.number_format($e->valor_envio,0,',','.'),
-                                                    'abono'       => '$'.number_format($e->pago_contado,0,',','.'),
-                                                    'saldo'       => '$'.number_format($e->pago_a_plazo,0,',','.'),
-                                                    'fecha_envio' => ($e->fecha_envio ?: $e->created_at)?->format('d/m/Y'),
-                                                    'fecha_plazo' => optional($e->fecha_plazo)->format('d/m/Y'),
-                                                    'conductor'   => $e->conductor?($e->conductor->nombre.' '.$e->conductor->apellido):null,
-                                                    'documento'   => $e->conductor?($e->conductor->tipo_documento.' '.$e->conductor->documento):null,
-                                                    'origen'      => $e->origen,
-                                                    'destino'     => $e->destino,
-                                                    'hora_salida' => $e->hora_salida? $e->hora_salida->format('d/m/Y H:i') : null,
-                                                    'hora_llegada'=> $e->hora_llegada? $e->hora_llegada->format('d/m/Y H:i') : null,
-                                                    'estado'      => $e->estado
-                                                ]) }}">
-                                                Ver más
-                                            </button>
-
-                                            @if($e->estado !== 'entregado')
-                                                <form action="{{ route('envios.entregar',$e) }}" method="POST"
-                                                      onsubmit="return confirm('¿Confirmar entrega?');" class="inline">
-                                                    @csrf
-                                                    <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
-                                                        Confirmar entrega
-                                                    </button>
-                                                </form>
-                                            @endif
-                                        </div>
-
+                                    <div class="flex items-center justify-between gap-2">
+                                        {{-- Acciones visibles: Editar / Eliminar --}}
                                         <div class="flex items-center gap-2">
                                             <a href="{{ route('envios.edit',$e) }}"
                                                class="px-3 py-1 rounded bg-black text-indigo-400 hover:bg-slate-800">
@@ -296,28 +260,93 @@
                                             </form>
                                         </div>
 
-                                        <div class="flex items-center gap-2">
-                                            @if($hasInvoice)
-                                                <a href="{{ route('invoices.show', $e->invoice_id) }}"
-                                                   class="px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700">
-                                                    Ver factura
-                                                </a>
-                                                <a href="{{ route('invoices.pdf', $e->invoice_id) }}"
-                                                   class="px-3 py-1 border rounded hover:bg-slate-100 dark:hover:bg-slate-800">
-                                                    PDF
-                                                </a>
-                                            @else
-                                                <a class="px-3 py-1 border rounded hover:bg-slate-100 dark:hover:bg-slate-800"
-                                                   href="{{ route('facturacion.buscar', ['envio_id' => $e->id]) }}">
-                                                    Facturar
-                                                </a>
-                                                <form action="{{ route('envios.facturar', $e) }}" method="POST" class="inline">
-                                                    @csrf
-                                                    <button class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-                                                        Facturar directo
-                                                    </button>
-                                                </form>
-                                            @endif
+                                        {{-- Menú ⋯: teletransportado al <body> con posición fija y drop-up si no hay espacio --}}
+                                        <div class="relative" 
+                                             x-data="{
+                                                open:false,
+                                                w:224,          // ancho del menú
+                                                x:0, y:0,       // coordenadas base del botón
+                                                openUp:false,   // decide si se abre hacia arriba
+                                                place(btn){
+                                                  const r = btn.getBoundingClientRect();
+                                                  this.x = Math.min(r.right - this.w, window.innerWidth - this.w - 8);
+                                                  const spaceBelow = window.innerHeight - r.bottom;
+                                                  this.openUp = spaceBelow < 160; // si hay poco espacio, abre hacia arriba
+                                                  this.y = this.openUp ? r.top - 8 : r.bottom + 8;
+                                                }
+                                             }"
+                                             @keydown.escape.window="open=false">
+                                            <button @click="place($el); open = !open"
+                                                    class="px-2 py-1 rounded bg-slate-700 text-white hover:bg-slate-800"
+                                                    aria-haspopup="menu" :aria-expanded="open">
+                                                ⋯
+                                            </button>
+
+                                            {{-- El menú vive en body para no ser recortado por overflow --}}
+                                            <template x-teleport="body">
+                                                <div x-cloak x-show="open"
+                                                     @click.outside="open=false"
+                                                     x-transition
+                                                     :style="`position:fixed; z-index:1000; width:${w}px; left:${x}px; ${openUp ? 'top:'+y+'px; transform:translateY(-100%);' : 'top:'+y+'px;'} `"
+                                                     class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-black shadow-xl">
+                                                    <div class="py-1 text-sm text-slate-700 dark:text-slate-200">
+                                                        {{-- Ver más (modal) --}}
+                                                        <button
+                                                            class="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                                            @click="
+                                                                open=false;
+                                                                show=true;
+                                                                envio={{ Js::from([
+                                                                    'id'          => $e->id,
+                                                                    'cliente'     => optional($e->cliente)->nombre,
+                                                                    'tipo'        => $e->tipo_grano,
+                                                                    'bultos'      => $e->numero_bulto,
+                                                                    'valor_bulto' => '$'.number_format($e->valor_bulto,0,',','.'),
+                                                                    'total'       => '$'.number_format($e->valor_envio,0,',','.'),
+                                                                    'abono'       => '$'.number_format($e->pago_contado,0,',','.'),
+                                                                    'saldo'       => '$'.number_format($e->pago_a_plazo,0,',','.'),
+                                                                    'fecha_envio' => ($e->fecha_envio ?: $e->created_at)?->format('d/m/Y'),
+                                                                    'fecha_plazo' => optional($e->fecha_plazo)->format('d/m/Y'),
+                                                                    'conductor'   => $e->conductor?($e->conductor->nombre.' '.$e->conductor->apellido):null,
+                                                                    'documento'   => $e->conductor?($e->conductor->tipo_documento.' '.$e->conductor->documento):null,
+                                                                    'origen'      => $e->origen,
+                                                                    'destino'     => $e->destino,
+                                                                    'hora_salida' => $e->hora_salida? $e->hora_salida->format('d/m/Y H:i') : null,
+                                                                    'hora_llegada'=> $e->hora_llegada? $e->hora_llegada->format('d/m/Y H:i') : null,
+                                                                    'estado'      => $e->estado
+                                                                ]) }}
+                                                            ">
+                                                            Ver más
+                                                        </button>
+
+                                                        @if($e->estado !== 'entregado')
+                                                            <form action="{{ route('envios.entregar',$e) }}" method="POST"
+                                                                  onsubmit="return confirm('¿Confirmar entrega?');">
+                                                                @csrf
+                                                                <button class="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800">
+                                                                    Confirmar entrega
+                                                                </button>
+                                                            </form>
+                                                        @endif
+
+                                                        @if($hasInvoice)
+                                                            <a href="{{ route('invoices.show', $e->invoice_id) }}"
+                                                               class="block px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800">
+                                                                Ver factura
+                                                            </a>
+                                                            <a href="{{ route('invoices.pdf', $e->invoice_id) }}"
+                                                               class="block px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800">
+                                                                Descargar PDF
+                                                            </a>
+                                                        @else
+                                                            <a class="block px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                                               href="{{ route('facturacion.buscar', ['envio_id' => $e->id]) }}">
+                                                                Facturar
+                                                            </a>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </template>
                                         </div>
                                     </div>
                                 </td>
@@ -334,7 +363,7 @@
             </div>
         </div>
 
-        {{-- MODAL VER MÁS (fondo negro) --}}
+        {{-- MODAL VER MÁS --}}
         <div x-cloak x-show="show" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div @click.outside="show=false"
                  class="bg-white dark:bg-black text-slate-900 dark:text-slate-100 border dark:border-slate-800 w-full max-w-lg rounded shadow p-6">
@@ -374,7 +403,7 @@
             </div>
         </div>
 
-        {{-- MODAL NUEVO ENVÍO (fondo negro, letras blancas) --}}
+        {{-- MODAL NUEVO ENVÍO --}}
         @isset($clientes)
         <dialog id="modal-envio" class="rounded-xl p-0 w-full max-w-3xl">
             <div class="relative bg-white dark:bg-black text-slate-900 dark:text-slate-100 border dark:border-slate-800 rounded-xl">

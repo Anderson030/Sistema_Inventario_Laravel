@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;          // ← agregado
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvoiceController extends Controller
@@ -107,6 +108,37 @@ class InvoiceController extends Controller
   }
 
   /* =========================
+   * ELIMINAR (con clave)
+   * ========================= */
+  public function destroy(Request $request, Invoice $invoice)
+  {
+    // Validación básica del campo
+    $request->validate([
+      'confirm_code' => ['required','string']
+    ], [
+      'confirm_code.required' => 'Debes ingresar la clave de confirmación.'
+    ]);
+
+    // Chequeo de clave (demo)
+    if ($request->input('confirm_code') !== '123') {
+      return back()->with('error', 'Clave de eliminación inválida.');
+    }
+
+    // Si no tienes cascada en BD, borra dependencias manualmente
+    DB::transaction(function () use ($invoice) {
+      if (method_exists($invoice, 'items')) {
+        $invoice->items()->delete();
+      }
+      if (method_exists($invoice, 'payments')) {
+        $invoice->payments()->delete();
+      }
+      $invoice->delete();
+    });
+
+    return redirect()->route('invoices.index')->with('ok', 'Factura eliminada correctamente.');
+  }
+
+  /* =========================
    * PDF + EMAIL
    * ========================= */
   public function pdf(Invoice $invoice){
@@ -195,9 +227,7 @@ class InvoiceController extends Controller
       'customer_address' => $clienteAddress,
     ]);
 
-    // Ítem principal desde el envío:
-    // - si hay numero_bulto + valor_bulto => usar esos
-    // - si no, usar valor_envio como 1 UND
+    // Ítem principal desde el envío
     $qty   = $envio->numero_bulto ? (float)$envio->numero_bulto : 1.0;
     $price = $envio->valor_bulto
       ? (int) preg_replace('/[^\d]/','',(string)$envio->valor_bulto)
@@ -215,7 +245,7 @@ class InvoiceController extends Controller
       'line_total'  => (int) round($qty * $price),
     ]);
 
-    // Si el envío tiene abono (pago_contado / abono), lo registramos como pago inicial
+    // Pago inicial si aplica
     $pagoInicial = 0;
     if (isset($envio->pago_contado) && $envio->pago_contado) {
       $pagoInicial = (int) preg_replace('/[^\d]/','',(string)$envio->pago_contado);
