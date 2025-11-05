@@ -6,6 +6,7 @@ use App\Models\Envio;
 use App\Models\Compra;
 use App\Models\Cliente;
 use App\Models\Proveedor;
+use App\Models\CajaMovimiento;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -13,7 +14,7 @@ class EnvioController extends Controller
 {
     public function index(Request $request)
     {
-        // --- Filtro de fechas (usa fecha_envio; si es null, cae a created_at) ---
+        // --- Filtros de fecha (usa fecha_envio; si es null, cae a created_at) ---
         $desde = $request->date('desde');
         $hasta = $request->date('hasta');
 
@@ -74,14 +75,13 @@ class EnvioController extends Controller
 
     public function create()
     {
-        // Necesario para el select de clientes en create.blade.php
+        // Para el select de clientes en create.blade.php
         $clientes = Cliente::orderBy('nombre')->get(['id','nombre']);
         return view('envios.create', compact('clientes'));
     }
 
     public function store(Request $request)
     {
-        // Valida lo que capturas en el formulario "nuevo envío"
         $data = $request->validate([
             'cliente_id'   => ['required','exists:clientes,id'],
             'tipo_grano'   => ['required','in:premium,eco'],
@@ -100,19 +100,35 @@ class EnvioController extends Controller
         $total = $valorBulto * (int) $data['numero_bulto'];
         $saldo = max(0, $total - $abono);
 
-        // Inserción
-        Envio::create([
-            'cliente_id'    => (int) $data['cliente_id'],
-            'tipo_grano'    => $data['tipo_grano'],
-            'numero_bulto'  => (int) $data['numero_bulto'],
-            'valor_bulto'   => $valorBulto,
-            'valor_envio'   => $total,
-            'pago_contado'  => $abono,
-            'pago_a_plazo'  => $saldo,
-            'fecha_envio'   => $data['fecha_envio'] ?? null,
-            'fecha_plazo'   => $data['fecha_plazo'] ?? null,
-            'estado'        => 'en_camino',
-        ]);
+        DB::transaction(function () use ($data, $valorBulto, $abono, $total, $saldo) {
+            // Inserta envío
+            $envio = Envio::create([
+                'cliente_id'    => (int) $data['cliente_id'],
+                'tipo_grano'    => $data['tipo_grano'],
+                'numero_bulto'  => (int) $data['numero_bulto'],
+                'valor_bulto'   => $valorBulto,
+                'valor_envio'   => $total,
+                'pago_contado'  => $abono,
+                'pago_a_plazo'  => $saldo,
+                'fecha_envio'   => $data['fecha_envio'] ?? null,
+                'fecha_plazo'   => $data['fecha_plazo'] ?? null,
+                'estado'        => 'en_camino',
+            ]);
+
+            // Si hubo abono al contado, crea movimiento de caja (ingreso)
+            if ($abono > 0) {
+                CajaMovimiento::create([
+                    'fecha'        => $data['fecha_envio'] ?? now()->toDateString(),
+                    'tipo'         => 'ingreso',
+                    'categoria'    => 'venta_contado',
+                    'descripcion'  => 'Abono contado envío #'.$envio->id,
+                    'monto'        => $abono,
+                    'venta_id'     => $envio->id,
+                    'observaciones'=> null,
+                    'user_id'      => auth()->id(),
+                ]);
+            }
+        });
 
         return redirect()->route('envios.index')->with('ok', 'Envío registrado');
     }
@@ -140,24 +156,66 @@ class EnvioController extends Controller
         $total      = $valorBulto * (int)$data['numero_bulto'];
         $saldo      = max(0, $total - $abono);
 
-        $envio->update([
-            'numero_bulto'   => (int)$data['numero_bulto'],
-            'valor_bulto'    => $valorBulto,
-            'valor_envio'    => $total,
-            'pago_contado'   => $abono,
-            'pago_a_plazo'   => $saldo,
-            'fecha_plazo'    => $data['fecha_plazo'] ?? null,
-            'fecha_envio'    => $data['fecha_envio'] ?? $envio->fecha_envio,
-            'cliente_id'     => (int)$data['cliente_id'],
-            'tipo_grano'     => $data['tipo_grano'],
-        ]);
+        DB::transaction(function () use ($envio, $data, $valorBulto, $abono, $total, $saldo) {
+            // Actualiza envío
+            $envio->update([
+                'numero_bulto'   => (int)$data['numero_bulto'],
+                'valor_bulto'    => $valorBulto,
+                'valor_envio'    => $total,
+                'pago_contado'   => $abono,
+                'pago_a_plazo'   => $saldo,
+                'fecha_plazo'    => $data['fecha_plazo'] ?? null,
+                'fecha_envio'    => $data['fecha_envio'] ?? $envio->fecha_envio,
+                'cliente_id'     => (int)$data['cliente_id'],
+                'tipo_grano'     => $data['tipo_grano'],
+            ]);
+
+            // Sincroniza movimiento de caja (ingreso) por abono contado
+            $mov = CajaMovimiento::where('venta_id', $envio->id)
+                    ->where('categoria', 'venta_contado')
+                    ->first();
+
+            if ($abono > 0) {
+                if ($mov) {
+                    $mov->update([
+                        'fecha'       => $data['fecha_envio'] ?? ($envio->fecha_envio?->toDateString() ?? now()->toDateString()),
+                        'monto'       => $abono,
+                        'descripcion' => 'Abono contado envío #'.$envio->id,
+                    ]);
+                } else {
+                    CajaMovimiento::create([
+                        'fecha'        => $data['fecha_envio'] ?? ($envio->fecha_envio?->toDateString() ?? now()->toDateString()),
+                        'tipo'         => 'ingreso',
+                        'categoria'    => 'venta_contado',
+                        'descripcion'  => 'Abono contado envío #'.$envio->id,
+                        'monto'        => $abono,
+                        'venta_id'     => $envio->id,
+                        'observaciones'=> null,
+                        'user_id'      => auth()->id(),
+                    ]);
+                }
+            } else {
+                // Si el abono pasó a 0, elimina el movimiento (si existía)
+                if ($mov) {
+                    $mov->delete();
+                }
+            }
+        });
 
         return redirect()->route('envios.index')->with('ok','Envío actualizado');
     }
 
     public function destroy(Envio $envio)
     {
-        $envio->delete();
+        DB::transaction(function () use ($envio) {
+            // Borra movimiento de caja asociado al abono contado de este envío
+            CajaMovimiento::where('venta_id', $envio->id)
+                ->where('categoria', 'venta_contado')
+                ->delete();
+
+            $envio->delete();
+        });
+
         return redirect()->route('envios.index')->with('ok','Envío eliminado');
     }
 

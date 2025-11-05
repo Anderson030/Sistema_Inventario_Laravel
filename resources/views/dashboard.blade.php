@@ -1,26 +1,31 @@
 {{-- resources/views/dashboard.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-slate-100 leading-tight">
-            Dashboard
-        </h2>
+        <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-slate-100 leading-tight">
+                Dashboard
+            </h2>
+            {{-- ❌ Eliminado botón superior para no duplicar el formulario --}}
+        </div>
     </x-slot>
 
     @php
-        // Helpers rápidos para formateo
-        $dstr = static function($d) { return optional($d)->toDateString(); };
-        $money = static function($n) { return '$'.number_format((int)($n ?? 0), 0, ',', '.'); };
-        $int   = static function($n) { return (int)($n ?? 0); };
-        $val   = static function($arr, $key) { return $arr[$key] ?? 0; };
-        $txt   = static function($arr, $key) use ($money){ return $money($arr[$key] ?? 0); };
-        $pct   = static function($num, $den) {
-            $den = (float)($den ?: 0);
-            return $den > 0 ? number_format(($num/$den)*100, 1, ',', '.') . '%' : '—';
-        };
+        // Helpers de formateo
+        $dstr  = static fn($d) => optional($d)->toDateString();
+        $money = static fn($n) => '$'.number_format((int)($n ?? 0), 0, ',', '.');
+        $int   = static fn($n) => (int)($n ?? 0);
+        // ❌ Se eliminó helper $pct porque ya no se usa (quitamos "Margen sobre ventas")
     @endphp
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+
+            {{-- Flash ok --}}
+            @if (session('ok'))
+                <div class="rounded-lg border border-green-700 bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 px-4 py-3">
+                    {{ session('ok') }}
+                </div>
+            @endif
 
             {{-- Filtros de fecha --}}
             <form method="GET"
@@ -86,15 +91,59 @@
                     <div class="text-2xl font-semibold mt-1">{{ $money($utilidad) }}</div>
                 </div>
 
+                {{-- ❌ Eliminados los cuadros de "Margen sobre ventas" y "Rango" --}}
+            </div>
+
+            {{-- KPIs de Caja --}}
+            @php
+                $saldoInicial     = $int($k['saldo_inicial']     ?? 0);
+                $ingresosCaja     = $int($k['ingresos_caja']     ?? 0);
+                $egresosCaja      = $int($k['egresos_caja']      ?? 0);
+                $gastosOperativos = $int($k['gastos_operativos'] ?? 0);
+                $saldoFinal       = $int($k['saldo_final']       ?? ($saldoInicial + $ingresosCaja - $egresosCaja));
+            @endphp
+
+            <div class="text-right">
+                <a href="{{ route('caja.index') }}"
+                   class="inline-block mt-2 text-sm px-3 py-2 rounded border border-slate-300 dark:border-slate-700 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    Ver movimientos de caja →
+                </a>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black p-4">
-                    <div class="text-slate-500 dark:text-slate-400 text-sm">Margen sobre ventas</div>
-                    <div class="text-2xl font-semibold mt-1">{{ $pct($utilidad, $ventasTotal) }}</div>
+                    <div class="text-slate-500 dark:text-slate-400 text-sm">Saldo inicial (antes de {{ $dstr($desde ?? null) }})</div>
+                    <div class="text-2xl font-semibold mt-1">{{ $money($saldoInicial) }}</div>
                 </div>
 
                 <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black p-4">
-                    <div class="text-slate-500 dark:text-slate-400 text-sm">Rango</div>
-                    <div class="mt-1 text-sm">
-                        {{ $dstr($desde ?? null) ?: '—' }} &rarr; {{ $dstr($hasta ?? null) ?: '—' }}
+                    <div class="text-slate-500 dark:text-slate-400 text-sm">Ingresos de caja</div>
+                    <div class="text-2xl font-semibold mt-1">{{ $money($ingresosCaja) }}</div>
+                </div>
+
+                <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black p-4">
+                    <div class="text-slate-500 dark:text-slate-400 text-sm">Egresos de caja</div>
+                    <div class="text-2xl font-semibold mt-1">{{ $money($egresosCaja) }}</div>
+                    <div class="text-xs mt-2 text-slate-500 dark:text-slate-400">
+                        Operativos: {{ $money($gastosOperativos) }}
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black p-4">
+                    <div class="text-slate-500 dark:text-slate-400 text-sm">Saldo final</div>
+                    <div class="text-2xl font-semibold mt-1">{{ $money($saldoFinal) }}</div>
+                </div>
+
+                {{-- ✅ ÚNICO botón de movimiento (abajo) --}}
+                <div class="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-black/30 p-4 flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="text-slate-500 dark:text-slate-400 text-xs mb-1">Movimiento rápido</div>
+                        <button
+                            type="button"
+                            class="px-3 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 text-sm"
+                            onclick="document.getElementById('modal-caja').showModal()">
+                            + Gasto / Ingreso
+                        </button>
                     </div>
                 </div>
             </div>
@@ -136,7 +185,7 @@
                 </div>
             </div>
 
-            {{-- Tabla de ventas del período (Envíos) --}}
+            {{-- Tabla: Ventas en el período --}}
             @isset($envios)
             <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black">
                 <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 font-semibold">
@@ -177,7 +226,7 @@
             </div>
             @endisset
 
-            {{-- Tabla de compras del período --}}
+            {{-- Tabla: Compras en el período --}}
             @isset($compras)
             <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black">
                 <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 font-semibold">
@@ -216,7 +265,105 @@
             </div>
             @endisset
 
-            {{-- Abonos por cliente (opcional) --}}
+            {{-- DETALLE DE CLIENTES (agrupado) --}}
+            @php
+                $detalleClientes = collect($envios ?? [])
+                    ->groupBy(fn($e) => $e->cliente->nombre ?? '—')
+                    ->map(function($g) {
+                        $bultos = (int) $g->sum('numero_bulto');
+                        $ventas = (int) $g->sum('valor_envio');
+                        $abono  = (int) $g->sum('pago_contado');
+                        $saldo  = (int) $g->sum('pago_a_plazo');
+                        return [
+                            'cliente' => $g->first()->cliente->nombre ?? '—',
+                            'bultos'  => $bultos,
+                            'ventas'  => $ventas,
+                            'abono'   => $abono,
+                            'saldo'   => $saldo,
+                        ];
+                    })->values();
+            @endphp
+
+            @if(($detalleClientes ?? collect())->count() > 0)
+            <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black">
+                <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 font-semibold">
+                    Detalle de clientes (ventas agrupadas por cliente)
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100">
+                            <tr>
+                                <th class="p-2 text-left">Cliente</th>
+                                <th class="p-2 text-left">Bultos</th>
+                                <th class="p-2 text-left">Ventas</th>
+                                <th class="p-2 text-left">Abono</th>
+                                <th class="p-2 text-left">Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-slate-900 dark:text-slate-100">
+                            @foreach($detalleClientes as $row)
+                                <tr class="dark:bg-slate-950 hover:dark:bg-slate-800">
+                                    <td class="p-2">{{ $row['cliente'] }}</td>
+                                    <td class="p-2">{{ number_format($row['bultos'], 0, ',', '.') }}</td>
+                                    <td class="p-2">{{ $money($row['ventas']) }}</td>
+                                    <td class="p-2">{{ $money($row['abono']) }}</td>
+                                    <td class="p-2">{{ $money($row['saldo']) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
+            {{-- DETALLE DE PROVEEDORES (agrupado) --}}
+            @php
+                $detalleProveedores = collect($compras ?? [])
+                    ->groupBy(fn($c) => $c->proveedor->nombre ?? '—')
+                    ->map(function($g) {
+                        $bultos = (int) $g->sum('cantidad_bultos');
+                        $total  = (int) $g->sum('total');
+                        $prom   = $bultos > 0 ? (int) round($total / $bultos) : 0;
+                        return [
+                            'proveedor'       => $g->first()->proveedor->nombre ?? '—',
+                            'bultos'          => $bultos,
+                            'compras_total'   => $total,
+                            'precio_promedio' => $prom,
+                        ];
+                    })->values();
+            @endphp
+
+            @if(($detalleProveedores ?? collect())->count() > 0)
+            <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black">
+                <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 font-semibold">
+                    Detalle de proveedores (compras agrupadas por proveedor)
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100">
+                            <tr>
+                                <th class="p-2 text-left">Proveedor</th>
+                                <th class="p-2 text-left">Bultos</th>
+                                <th class="p-2 text-left">Compras</th>
+                                <th class="p-2 text-left">Precio prom. x bulto</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-slate-900 dark:text-slate-100">
+                            @foreach($detalleProveedores as $row)
+                                <tr class="dark:bg-slate-950 hover:dark:bg-slate-800">
+                                    <td class="p-2">{{ $row['proveedor'] }}</td>
+                                    <td class="p-2">{{ number_format($row['bultos'], 0, ',', '.') }}</td>
+                                    <td class="p-2">{{ $money($row['compras_total']) }}</td>
+                                    <td class="p-2">{{ $money($row['precio_promedio']) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
+            {{-- Abonos por cliente (tu tabla original) --}}
             @isset($abonosPorCliente)
             <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black">
                 <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 font-semibold">
@@ -251,4 +398,67 @@
 
         </div>
     </div>
+
+    {{-- MODAL (dialog): registrar gasto/ingreso de caja --}}
+    <dialog id="modal-caja" class="rounded-xl p-0 w-full max-w-md">
+        <div class="relative bg-white dark:bg-black text-slate-900 dark:text-slate-100 border dark:border-slate-800 rounded-xl">
+            {{-- Cerrar --}}
+            <form method="dialog">
+                <button class="absolute right-3 top-2 text-slate-400 hover:text-slate-300" aria-label="Cerrar">✕</button>
+            </form>
+
+            {{-- Form --}}
+            <form method="POST" action="{{ route('caja.store') }}" class="p-6 space-y-4">
+                @csrf
+                <h3 class="text-lg font-semibold">Nuevo movimiento de caja</h3>
+
+                <div>
+                    <label class="block text-sm mb-1">Fecha</label>
+                    <input type="date" name="fecha" value="{{ now()->toDateString() }}"
+                           class="w-full rounded border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm mb-1">Tipo</label>
+                    <select name="tipo" class="w-full rounded border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" required>
+                        <option value="egreso">Egreso</option>
+                        <option value="ingreso">Ingreso</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm mb-1">Categoría</label>
+                    <select name="categoria" class="w-full rounded border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                        <option value="">-- Selecciona --</option>
+                        <option value="gasolina">Gasolina</option>
+                        <option value="comida">Comida</option>
+                        <option value="peajes">Peajes</option>
+                        <option value="otros_gastos">Otros gastos</option>
+                        <option value="saldo_inicial">Saldo inicial</option>
+                        <option value="venta_contado">Venta (contado)</option>
+                        <option value="aporte_caja">Aporte a caja</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm mb-1">Monto</label>
+                    <input type="number" name="monto" min="0" step="1"
+                           class="w-full rounded border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm mb-1">Descripción</label>
+                    <input type="text" name="descripcion" maxlength="200" placeholder="Detalle opcional"
+                           class="w-full rounded border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button"
+                            class="px-4 py-2 rounded border hover:bg-slate-100 dark:hover:bg-slate-800"
+                            onclick="document.getElementById('modal-caja').close()">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
 </x-app-layout>

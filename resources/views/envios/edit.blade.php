@@ -32,11 +32,13 @@
                             required>
                         <option value="">Seleccione…</option>
                         @foreach($clientes as $c)
-                            <option value="{{ $c->id }}" {{ $envio->cliente_id == $c->id ? 'selected' : '' }}>
+                            <option value="{{ $c->id }}"
+                                {{ (string)old('cliente_id', $envio->cliente_id) === (string)$c->id ? 'selected' : '' }}>
                                 {{ $c->nombre }}
                             </option>
                         @endforeach
                     </select>
+                    @error('cliente_id')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- Bultos / Valor por bulto / Total (readonly) --}}
@@ -45,13 +47,15 @@
                         <label class="block text-sm mb-1 dark:text-slate-300">Bultos a vender</label>
                         <input type="number" min="1" name="numero_bulto" id="e_bultos"
                                class="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 py-2 focus:ring-2 focus:ring-indigo-600"
-                               value="{{ $envio->numero_bulto }}" required>
+                               value="{{ old('numero_bulto', $envio->numero_bulto) }}" required>
+                        @error('numero_bulto')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
                         <label class="block text-sm mb-1 dark:text-slate-300">Valor por bulto</label>
                         <input type="text" name="valor_bulto" id="e_valor_bulto"
                                class="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 py-2 focus:ring-2 focus:ring-indigo-600"
-                               value="{{ '$'.number_format($envio->valor_bulto,0,',','.') }}" required>
+                               value="{{ old('valor_bulto', '$'.number_format($envio->valor_bulto,0,',','.')) }}" required>
+                        @error('valor_bulto')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
                         <label class="block text-sm mb-1 dark:text-slate-300">Total</label>
@@ -67,9 +71,11 @@
                     <select name="tipo_grano"
                             class="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 py-2 focus:ring-2 focus:ring-indigo-600"
                             required>
-                        <option value="premium" {{ $envio->tipo_grano === 'premium' ? 'selected' : '' }}>Premium</option>
-                        <option value="eco"     {{ $envio->tipo_grano === 'eco' ? 'selected' : '' }}>Eco</option>
+                        @php $t = old('tipo_grano', $envio->tipo_grano); @endphp
+                        <option value="premium" {{ $t === 'premium' ? 'selected' : '' }}>Premium</option>
+                        <option value="eco"     {{ $t === 'eco' ? 'selected' : '' }}>Eco</option>
                     </select>
+                    @error('tipo_grano')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- Abono / Saldo / Fechas --}}
@@ -78,7 +84,9 @@
                         <label class="block text-sm mb-1 dark:text-slate-300">Abono</label>
                         <input type="text" name="pago_contado" id="e_abono"
                                class="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 py-2 focus:ring-2 focus:ring-indigo-600"
-                               value="{{ '$'.number_format($envio->pago_contado,0,',','.') }}" placeholder="$0">
+                               value="{{ old('pago_contado', '$'.number_format($envio->pago_contado,0,',','.')) }}"
+                               placeholder="$0">
+                        @error('pago_contado')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
                         <label class="block text-sm mb-1 dark:text-slate-300">Queda debiendo</label>
@@ -89,14 +97,16 @@
                     <div>
                         <label class="block text-sm mb-1 dark:text-slate-300">Fecha de envío</label>
                         <input type="date" name="fecha_envio"
-                               value="{{ optional($envio->fecha_envio ?? $envio->created_at)->format('Y-m-d') }}"
+                               value="{{ old('fecha_envio', optional($envio->fecha_envio ?? $envio->created_at)->format('Y-m-d')) }}"
                                class="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 py-2 focus:ring-2 focus:ring-indigo-600">
+                        @error('fecha_envio')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
                         <label class="block text-sm mb-1 dark:text-slate-300">Fecha de plazo</label>
                         <input type="date" name="fecha_plazo"
-                               value="{{ optional($envio->fecha_plazo)->format('Y-m-d') }}"
+                               value="{{ old('fecha_plazo', optional($envio->fecha_plazo)->format('Y-m-d')) }}"
                                class="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 py-2 focus:ring-2 focus:ring-indigo-600">
+                        @error('fecha_plazo')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
 
@@ -143,8 +153,10 @@
         abono?.addEventListener('input', moneyInput);
         bultos?.addEventListener('input', recalc);
 
+        // Calcular al cargar con valores iniciales del envío
         window.addEventListener('DOMContentLoaded', recalc);
 
+        // Normaliza al enviar
         document.getElementById('f-envio-edit').addEventListener('submit', ()=>{
             if (valor) valor.value = digits(valor.value);
             if (abono) abono.value = digits(abono.value);
